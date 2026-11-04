@@ -13,8 +13,8 @@
 # arrives as a new pull request.
 #
 # templateVersion: 9
-# toolchains: node@20
-# project: cmvtk7bwi00a34y2tfnhn9ic6
+# toolchains: node@24
+# project: cmvt3slp807r1ztukcowlu4o6
 # ============================================================================
 name: QuikPilot
 
@@ -100,7 +100,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Customer setup steps
         if: hashFiles('.github/actions/quikpilot-setup/action.yml') != ''
         uses: ./.github/actions/quikpilot-setup
