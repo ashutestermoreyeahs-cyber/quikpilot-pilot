@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { addExpense, createGroup, recordPayment } from "./ledger.js";
+import { addExpense, createGroup, deleteExpense, recordPayment } from "./ledger.js";
 import { categoryTotals, memberSummary } from "./reports.js";
 
 function group() {
@@ -42,5 +42,41 @@ describe("memberSummary", () => {
     recordPayment(g, { from: "u1", to: "u2", amountMinor: 500 });
     const a = memberSummary(g).find((r) => r.id === "u1");
     expect(a.balanceMinor).toBe(-750 + 500);
+  });
+});
+
+describe("Spending totals after deletions", () => {
+  it("[QP-QUICK-58-1] Spending total excludes the deleted Goa dinner expense", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "b", name: "Bhavin" },
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+      { id: "u3", name: "C" },
+    ]);
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "b", participants: ["b", "u1", "u2", "u3"], category: "food" });
+    deleteExpense(g, dup.id);
+    const total = categoryTotals(g).reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(0);
+  });
+
+  it("[QP-QUICK-58-2] Spending total matches the sum of non-deleted expenses", () => {
+    const g = group();
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "u1", participants: ["u1", "u2"], category: "food" });
+    deleteExpense(g, dup.id);
+    const total = categoryTotals(g).reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(4500);
+  });
+
+  it("[QP-QUICK-58-3] Deleting an expense removes it from Spending totals", () => {
+    const g = createGroup("g", "Goa trip", [
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+    ]);
+    const big = addExpense(g, { description: "Hotel", amountMinor: 1200, paidBy: "u1", participants: ["u1", "u2"], category: "travel" });
+    addExpense(g, { description: "Taxi", amountMinor: 800, paidBy: "u2", participants: ["u1", "u2"], category: "travel" });
+    deleteExpense(g, big.id);
+    const total = categoryTotals(g).reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(800);
+    expect(g.expenses.map((e) => e.amountMinor)).toContain(800);
   });
 });
