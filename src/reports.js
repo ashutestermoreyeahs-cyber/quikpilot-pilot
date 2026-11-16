@@ -10,7 +10,7 @@ import { computeShares } from "./splits.js";
 /** Total spend per category, largest first. */
 export function categoryTotals(group) {
   const totals = {};
-  for (const exp of group.expenses) {
+  for (const exp of group.expenses.filter((e) => !e.deletedAt)) {
     const category = exp.category ?? "other";
     totals[category] = (totals[category] ?? 0) + exp.amountMinor;
   }
