@@ -108,4 +108,44 @@ describe("Spending totals after deletions", () => {
     expect(total).toBe(800);
     expect(g.expenses.map((e) => e.amountMinor)).toContain(800);
   });
+
+  it("[QP-QUICK-60-1] Spending excludes the seeded deleted expense on the Goa trip", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "b", name: "Bhavin" },
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+      { id: "u3", name: "C" },
+    ]);
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "b", participants: ["b", "u1", "u2", "u3"], category: "food" });
+    deleteExpense(g, dup.id);
+    const food = categoryTotals(g).find((r) => r.category === "food");
+    expect(food?.totalMinor ?? 0).not.toBe(4860);
+  });
+
+  it("[QP-QUICK-60-2] Spending totals match Balances and Expenses list when a deleted expense exists", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+    ]);
+    addExpense(g, { description: "Taxi", amountMinor: 800, paidBy: "u2", participants: ["u1", "u2"], category: "travel" });
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "u1", participants: ["u1", "u2"], category: "food" });
+    deleteExpense(g, dup.id);
+    const listed = g.expenses.filter((e) => !e.deletedAt).map((e) => e.amountMinor);
+    const total = categoryTotals(g).reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(listed.reduce((sum, n) => sum + n, 0));
+  });
+
+  it("[QP-QUICK-60-3] Restored expense is counted again in Spending", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "b", name: "Bhavin" },
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+      { id: "u3", name: "C" },
+    ]);
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "b", participants: ["b", "u1", "u2", "u3"], category: "food" });
+    deleteExpense(g, dup.id);
+    delete dup.deletedAt;
+    const food = categoryTotals(g).find((r) => r.category === "food");
+    expect(food.totalMinor).toBe(4860);
+  });
 });

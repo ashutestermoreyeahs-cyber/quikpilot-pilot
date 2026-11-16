@@ -29,7 +29,7 @@ export function memberSummary(group) {
     group.members.map((m) => [m.id, { id: m.id, name: m.name, paidMinor: 0, owedMinor: 0, balanceMinor: balances[m.id] }]),
   );
 
-  for (const exp of group.expenses) {
+  for (const exp of group.expenses.filter(isActive)) {
     const shares = computeShares(exp);
     summary[exp.paidBy].paidMinor += exp.amountMinor;
     exp.participants.forEach((memberId, i) => {
