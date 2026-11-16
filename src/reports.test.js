@@ -46,6 +46,35 @@ describe("memberSummary", () => {
 });
 
 describe("Spending totals after deletions", () => {
+  it("[QP-QUICK-59-1] Excludes the deleted dinner entry from the Goa trip Spending total", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "b", name: "Bhavin" },
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+      { id: "u3", name: "C" },
+    ]);
+    addExpense(g, { description: "Team dinner", amountMinor: 1200, paidBy: "b", participants: ["b", "u1", "u2", "u3"], category: "food" });
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "b", participants: ["b", "u1", "u2", "u3"], category: "food" });
+    deleteExpense(g, dup.id);
+    const totals = categoryTotals(g);
+    const total = totals.reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(1200);
+    expect(totals.find((r) => r.category === "food").totalMinor).toBe(1200);
+  });
+
+  it("[QP-QUICK-59-2] Spending total equals the sum of the amounts of the expenses in the Expenses list", () => {
+    const g = createGroup("goa", "Goa trip", [
+      { id: "u1", name: "A" },
+      { id: "u2", name: "B" },
+    ]);
+    addExpense(g, { description: "Taxi", amountMinor: 800, paidBy: "u2", participants: ["u1", "u2"], category: "travel" });
+    const dup = addExpense(g, { description: "Duplicate dinner entry", amountMinor: 4860, paidBy: "u1", participants: ["u1", "u2"], category: "food" });
+    deleteExpense(g, dup.id);
+    const listed = g.expenses.filter((e) => !e.deletedAt).map((e) => e.amountMinor);
+    const total = categoryTotals(g).reduce((sum, r) => sum + r.totalMinor, 0);
+    expect(total).toBe(listed.reduce((sum, n) => sum + n, 0));
+  });
+
   it("[QP-QUICK-58-1] Spending total excludes the deleted Goa dinner expense", () => {
     const g = createGroup("goa", "Goa trip", [
       { id: "b", name: "Bhavin" },
